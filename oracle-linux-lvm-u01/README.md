@@ -144,34 +144,7 @@ Note: `Size` is 30G but `Avail` is 28G. ext4 reserves 5% of blocks for root by d
 | **ext4** | Mature and well supported for Oracle software; unlike XFS, it can be shrunk if ever needed |
 | **Mapper path in fstab** | Stable across reboots, unlike `/dev/sdX` names |
 
-## Issues encountered
-
-| Issue | Cause | Fix |
-|---|---|---|
-| `parted` printed its usage text and made no change | Typo: `mklable` instead of `mklabel` | Re-ran with the correct keyword; confirmed with `echo $?` and `lsblk` |
-| `lvcreate` rejected the command | Typed `-1` (digit one) instead of `-l` (extents option) | Re-ran with `-l 100%FREE` |
-| `ststemctl: command not found` | Typo | Re-ran as `systemctl daemon-reload` |
-| Saving output to `oracle-linux-lvm-u01/output.txt` failed | Relative path to a directory that didn't exist in the current working directory | Used an absolute path (`/u01/output.txt`) |
-
-**Lessons:** check exit codes (`echo $?`) after critical steps, back up `/etc/fstab` before editing, and test with `umount` + `mount -a` before rebooting.
-
----
-
-## Next steps
-
-```bash
-# Reclaim most of the ext4 root reserve (5% → 1%) on a data filesystem
-tune2fs -m 1 /dev/mapper/vg_u01-lv_u01
-
-# Hand /u01 to the Oracle software owner (once the oracle user and oinstall group exist)
-chown -R oracle:oinstall /u01
-
-# Grow /u01 later: attach another disk (e.g. /dev/sdc), then
-parted /dev/sdc --script mklabel gpt mkpart primary 0% 100% set 1 lvm on
-pvcreate /dev/sdc1
-vgextend vg_u01 /dev/sdc1
-lvextend -r -l +100%FREE /dev/vg_u01/lv_u01   # -r resizes the filesystem online
-```
+      
 
 ## Skills demonstrated
 
